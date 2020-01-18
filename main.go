@@ -11,17 +11,31 @@ import (
 	"path/filepath"
 )
 
-const maxUploadSize = 2 * 1024 * 1024 // 2 mb
-const uploadPath = "./tmp"
+const maxUploadSize = 8 * 1024 * 1024 // 8 mb
+var uploadPath string
+var servePath string
+var bindipport string
+
+func environOrDefault(envvarname, defvalue string) string {
+	if len(os.Getenv(envvarname)) > 0 {
+		return os.Getenv(envvarname)
+	} else {
+		return defvalue
+	}
+}
 
 func main() {
+	uploadPath = environOrDefault("GOLANGHTTPUPLOAD_UPLOAD_PATH", "./uploads")
+	servePath = environOrDefault("GOLANGHTTPUPLOAD_SERVE_PATH", "./public")
+	bindipport = environOrDefault("GOLANGHTTPUPLOAD_BINDIP_PORT", ":8080")
+
 	http.HandleFunc("/upload", uploadFileHandler())
 
-	fs := http.FileServer(http.Dir(uploadPath))
-	http.Handle("/files/", http.StripPrefix("/files", fs))
+	fs := http.FileServer(http.Dir(servePath))
+	http.Handle("/", http.StripPrefix("/", fs))
 
-	log.Print("Server started on localhost:8080, use /upload for uploading files and /files/{fileName} for downloading")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Print("Server started on ", bindipport, ", use /upload for uploading files")
+	log.Fatal(http.ListenAndServe(bindipport, nil))
 }
 
 func uploadFileHandler() http.HandlerFunc {
@@ -34,7 +48,7 @@ func uploadFileHandler() http.HandlerFunc {
 		}
 
 		// parse and validate file and post parameters
-		file, _, err := r.FormFile("uploadFile")
+		file, _, err := r.FormFile("file")
 		if err != nil {
 			renderError(w, "INVALID_FILE", http.StatusBadRequest)
 			return
@@ -52,6 +66,8 @@ func uploadFileHandler() http.HandlerFunc {
 		case "image/jpeg", "image/jpg":
 		case "image/gif", "image/png":
 		case "application/pdf":
+		case "application/postscript":
+		case "text/plain":
 			break
 		default:
 			renderError(w, "INVALID_FILE_TYPE", http.StatusBadRequest)
@@ -63,8 +79,9 @@ func uploadFileHandler() http.HandlerFunc {
 			renderError(w, "CANT_READ_FILE_TYPE", http.StatusInternalServerError)
 			return
 		}
-		newPath := filepath.Join(uploadPath, fileName+fileEndings[0])
-		fmt.Printf("FileType: %s, File: %s\n", detectedFileType, newPath)
+		newPath := filepath.Join(uploadPath, "."+fileName+fileEndings[0])
+		finalPath := filepath.Join(uploadPath, fileName+fileEndings[0])
+		fmt.Printf("FileType: %s, File: %s\n", detectedFileType, finalPath)
 
 		// write file
 		newFile, err := os.Create(newPath)
@@ -75,6 +92,12 @@ func uploadFileHandler() http.HandlerFunc {
 		defer newFile.Close() // idempotent, okay to call twice
 		if _, err := newFile.Write(fileBytes); err != nil || newFile.Close() != nil {
 			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
+			os.Remove(newPath)
+			return
+		}
+		if os.Rename(newPath, finalPath) != nil {
+			w.Write([]byte("MV ERROR"))
+			os.Remove(newPath)
 			return
 		}
 		w.Write([]byte("SUCCESS"))
