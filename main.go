@@ -34,7 +34,7 @@ func main() {
 	fs := http.FileServer(http.Dir(servePath))
 	http.Handle("/", http.StripPrefix("/", fs))
 
-	log.Print("Server started on ", bindipport, ", use /upload for uploading files")
+	log.Print("Server started on ", bindipport, ", use ", uploadPath, " for uploading files")
 	log.Fatal(http.ListenAndServe(bindipport, nil))
 }
 
