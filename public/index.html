@@ -1,11 +1,26 @@
-<html>
+<!doctype html>
+<html lang="en">
 <head>
 <script src="dropzone.js"></script>
 <link rel="stylesheet" href="dropzone.css"></link>
 </head>
 <body>
-<h2>Drop or Click here to queue files to print</h2>
-<form ENCTYPE="multipart/form-data" ACTION="/upload" method="post" class="dropzone" style="min-height:30%; border:1px solid black; text-align:left; vertical-alignment:middle;">
+<h2>Drop or Click here to upload and queue files to print in <em>A4</em></h2>
+<h3>Printable File-Types: .pdf, .ps, .png, .jpg</h3>
+<h3>Max accepted file size: 8MiB</h3>
+<form ENCTYPE="multipart/form-data" ACTION="/uploadA4" method="post" class="dropzone" style="min-height:30%; border:1px solid black; text-align:left; vertical-alignment:middle;">
+<INPUT TYPE="hidden" name="MAX_FILE_SIZE" value="9863168">
+<noscript>
+<p>No Script Fallback-Form:</p>
+<INPUT NAME="file" TYPE="file" size="50"><br>
+<INPUT TYPE="submit" VALUE="Upload" onClick="submit()">
+</noscript>
+</form>
+<hr/>
+<h2>Drop or Click here to upload and queue files to print in <em>A3</em></h2>
+<h3>Printable File-Types: .pdf, .ps, .png, .jpg</h3>
+<h3>Max accepted file size: 8MiB</h3>
+<form ENCTYPE="multipart/form-data" ACTION="/uploadA3" method="post" class="dropzone" style="min-height:30%; border:1px solid black; text-align:left; vertical-alignment:middle;">
 <INPUT TYPE="hidden" name="MAX_FILE_SIZE" value="9863168">
 <noscript>
 <p>No Script Fallback-Form:</p>

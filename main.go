@@ -12,7 +12,6 @@ import (
 )
 
 const maxUploadSize = 8 * 1024 * 1024 // 8 mb
-var uploadPath string
 var servePath string
 var bindipport string
 
@@ -25,11 +24,17 @@ func environOrDefault(envvarname, defvalue string) string {
 }
 
 func main() {
-	uploadPath = environOrDefault("GOLANGHTTPUPLOAD_UPLOAD_PATH", "./uploads")
+	uploadPath1 := environOrDefault("GOLANGHTTPUPLOAD_UPLOAD_PATH1", "./uploadsA4")
+	uploadPath2 := environOrDefault("GOLANGHTTPUPLOAD_UPLOAD_PATH2", "./uploadsA3")
 	servePath = environOrDefault("GOLANGHTTPUPLOAD_SERVE_PATH", "./public")
 	bindipport = environOrDefault("GOLANGHTTPUPLOAD_BINDIP_PORT", ":8080")
 
-	http.HandleFunc("/upload", uploadFileHandler())
+	upload1Handler := uploadFileHandler(uploadPath1)
+	upload2Handler := uploadFileHandler(uploadPath2)
+
+	http.HandleFunc("/upload", upload1Handler)
+	http.HandleFunc("/uploadA4", upload1Handler)
+	http.HandleFunc("/uploadA3", upload2Handler)
 
 	fs := http.FileServer(http.Dir(servePath))
 	http.Handle("/", http.StripPrefix("/", fs))
@@ -38,7 +43,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(bindipport, nil))
 }
 
-func uploadFileHandler() http.HandlerFunc {
+func uploadFileHandler(uploadPath string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate file size
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
